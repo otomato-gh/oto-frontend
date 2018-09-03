@@ -41,11 +41,20 @@ node('slave1'){
 	//sh "kubectl delete ns ${nsName}"
 	    echo 'TODO'
     }
-    stage('deply-to-staging'){
-        sh "kubectl apply -f ${svcName}-dep.yml -n staging"  
-    }
-    stage ('integration-test'){
-        echo "Not implemented"
-    }
 }
+node ('slave-kc'){
+    checkout scm
+    sh "sed -i -- \'s/BUILD_NUMBER/10/g\' ${svcName}-dep.yml"
+    stage('deploy-to-staging'){
+             withCredentials([file(credentialsId: 'ca', variable: 'FILE')])
+             {
+                sh 'cat $FILE > ca-ams03-istiotst.pem'
+             }
+             withKubeConfig([credentialsId: 'kconf',
+                    contextName: 'istiotst'
+                    ]) {
+                        
+            sh "kubectl apply -f ${svcName}-dep.yml -n staging"
+                    }
+        }
 
